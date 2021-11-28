@@ -3,7 +3,7 @@ use crate::{
     MultiPoint, MultiPolygon, Point, Polygon, Rect, Triangle,
 };
 
-pub(crate) fn twice_signed_ring_area<T>(linestring: &LineString<T>) -> T
+fn twice_signed_ring_area<T>(linestring: &LineString<T>) -> T
 where
     T: CoordNum,
 {

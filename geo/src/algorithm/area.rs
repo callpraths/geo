@@ -318,11 +318,9 @@ mod test {
 
         use crate::map_coords::MapCoords;
         let polygon = polygon.map_coords(|&(x, y)| (x + shift_x, y + shift_y));
-
         let new_area = polygon.signed_area();
-        let err = (area - new_area).abs() / area;
 
-        assert!(err < 1e-2);
+        assert_relative_eq!(area, new_area, max_relative=1e-2);
     }
     #[test]
     fn rectangle_test() {

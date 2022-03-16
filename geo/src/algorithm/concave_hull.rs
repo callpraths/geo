@@ -55,8 +55,7 @@ where
 {
     type Scalar = T;
     fn concave_hull(&self, concavity: Self::Scalar) -> Polygon<Self::Scalar> {
-        let mut points: Vec<_> = self.exterior().0.clone();
-        Polygon::new(concave_hull(&mut points, concavity), vec![])
+        Polygon::new(concave_hull(self.exterior().0.clone(), concavity), vec![])
     }
 }
 
@@ -66,12 +65,12 @@ where
 {
     type Scalar = T;
     fn concave_hull(&self, concavity: Self::Scalar) -> Polygon<Self::Scalar> {
-        let mut aggregated: Vec<Coordinate<Self::Scalar>> = self
+        let aggregated: Vec<Coordinate<Self::Scalar>> = self
             .0
             .iter()
             .flat_map(|elem| elem.exterior().0.clone())
             .collect();
-        Polygon::new(concave_hull(&mut aggregated, concavity), vec![])
+        Polygon::new(concave_hull(aggregated, concavity), vec![])
     }
 }
 
@@ -81,7 +80,7 @@ where
 {
     type Scalar = T;
     fn concave_hull(&self, concavity: Self::Scalar) -> Polygon<Self::Scalar> {
-        Polygon::new(concave_hull(&mut self.0.clone(), concavity), vec![])
+        Polygon::new(concave_hull(self.0.clone(), concavity), vec![])
     }
 }
 
@@ -91,9 +90,8 @@ where
 {
     type Scalar = T;
     fn concave_hull(&self, concavity: T) -> Polygon<T> {
-        let mut aggregated: Vec<Coordinate<T>> =
-            self.iter().flat_map(|elem| elem.0.clone()).collect();
-        Polygon::new(concave_hull(&mut aggregated, concavity), vec![])
+        let aggregated: Vec<Coordinate<T>> = self.iter().flat_map(|elem| elem.0.clone()).collect();
+        Polygon::new(concave_hull(aggregated, concavity), vec![])
     }
 }
 
@@ -103,8 +101,8 @@ where
 {
     type Scalar = T;
     fn concave_hull(&self, concavity: T) -> Polygon<T> {
-        let mut coordinates: Vec<Coordinate<T>> = self.iter().map(|point| point.0).collect();
-        Polygon::new(concave_hull(&mut coordinates, concavity), vec![])
+        let coordinates: Vec<Coordinate<T>> = self.iter().map(|point| point.0).collect();
+        Polygon::new(concave_hull(coordinates, concavity), vec![])
     }
 }
 
@@ -191,17 +189,17 @@ where
 
 // This takes significant inspiration from:
 // https://github.com/mapbox/concaveman/blob/54838e1/index.js#L11
-fn concave_hull<T>(coords: &mut [Coordinate<T>], concavity: T) -> LineString<T>
+fn concave_hull<T>(mut coords: Vec<Coordinate<T>>, concavity: T) -> LineString<T>
 where
     T: GeoFloat + RTreeNum,
 {
-    let hull = qhull::quick_hull(coords);
+    let hull = qhull::quick_hull(&mut coords);
 
     if coords.len() < 4 {
         return hull;
     }
 
-    //Get points in overall dataset that aren't on the exterior linestring of the hull
+    // Get points in overall dataset that aren't on the exterior linestring of the hull
     let hull_tree: RTree<Coordinate<T>> = RTree::bulk_load(hull.clone().0);
 
     let interior_coords: Vec<Coordinate<T>> = coords
@@ -262,7 +260,7 @@ mod test {
 
     #[test]
     fn triangle_test() {
-        let mut triangle = vec![
+        let triangle = vec![
             coord! { x: 0.0, y: 0.0 },
             coord! { x: 4.0, y: 0.0 },
             coord! { x: 2.0, y: 2.0 },
@@ -276,13 +274,13 @@ mod test {
         ];
 
         let concavity = 2.0;
-        let res = concave_hull(&mut triangle, concavity);
+        let res = concave_hull(triangle, concavity);
         assert_eq!(res, correct);
     }
 
     #[test]
     fn square_test() {
-        let mut square = vec![
+        let square = vec![
             coord! { x: 0.0, y: 0.0 },
             coord! { x: 4.0, y: 0.0 },
             coord! { x: 4.0, y: 4.0 },
@@ -298,13 +296,13 @@ mod test {
         ];
 
         let concavity = 2.0;
-        let res = concave_hull(&mut square, concavity);
+        let res = concave_hull(square, concavity);
         assert_eq!(res, correct);
     }
 
     #[test]
     fn one_flex_test() {
-        let mut v = vec![
+        let v = vec![
             coord! { x: 0.0, y: 0.0 },
             coord! { x: 2.0, y: 1.0 },
             coord! { x: 4.0, y: 0.0 },
@@ -320,13 +318,13 @@ mod test {
             (x: 4.0, y: 0.0),
         ];
         let concavity = 1.0;
-        let res = concave_hull(&mut v, concavity);
+        let res = concave_hull(v, concavity);
         assert_eq!(res, correct);
     }
 
     #[test]
     fn four_flex_test() {
-        let mut v = vec![
+        let v = vec![
             coord! { x: 0.0, y: 0.0 },
             coord! { x: 2.0, y: 1.0 },
             coord! { x: 4.0, y: 0.0 },
@@ -348,13 +346,13 @@ mod test {
             (x: 4.0, y: 0.0),
         ];
         let concavity = 1.7;
-        let res = concave_hull(&mut v, concavity);
+        let res = concave_hull(v, concavity);
         assert_eq!(res, correct);
     }
 
     #[test]
     fn consecutive_flex_test() {
-        let mut v = vec![
+        let v = vec![
             coord! { x: 0.0, y: 0.0 },
             coord! { x: 4.0, y: 0.0 },
             coord! { x: 4.0, y: 4.0 },
@@ -370,7 +368,7 @@ mod test {
             (x: 4.0, y: 0.0),
         ];
         let concavity = 2.0;
-        let res = concave_hull(&mut v, concavity);
+        let res = concave_hull(v, concavity);
         assert_eq!(res, correct);
     }
 

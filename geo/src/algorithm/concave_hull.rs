@@ -187,6 +187,71 @@ where
     }
 }
 
+fn get_interior_points_tree<T: GeoFloat + RTreeNum>(
+    coords: &[Coordinate<T>],
+    hull: &LineString<T>,
+) -> RTree<Coordinate<T>> {
+    let hull_tree: RTree<Coordinate<T>> = RTree::bulk_load(hull.clone().0);
+    let interior_coords: Vec<Coordinate<T>> = coords
+        .iter()
+        .filter(|coord| !hull_tree.contains(coord))
+        .copied()
+        .collect();
+    RTree::bulk_load(interior_coords)
+}
+
+struct ConcaveHullBuilder<T: GeoFloat + RTreeNum> {
+    pub lines: VecDeque<Line<T>>,
+    pub line_tree: RTree<Line<T>>,
+    pub concave_hull_points: Vec<Point<T>>,
+}
+
+impl<T: GeoFloat + RTreeNum> ConcaveHullBuilder<T> {
+    fn new(convex_hull: LineString<T>) -> Self {
+        let mut builder = Self {
+            lines: VecDeque::new(),
+            line_tree: RTree::new(),
+            concave_hull_points: vec![],
+        };
+        for line in convex_hull.lines() {
+            builder.lines.push_back(line);
+            builder.line_tree.insert(line);
+        }
+        builder
+    }
+
+    fn pop_next_line(&mut self) -> Option<Line<T>> {
+        self.lines.pop_front()
+    }
+
+    fn bend_line_at(&mut self, line: Line<T>, coord: Coordinate<T>) {
+        // Shouldn't this be removed in `pop_next_line`?
+        self.line_tree.remove(&line);
+
+        let point = Point::new(coord.x, coord.y);
+        let start_line = Line::new(line.start_point(), point);
+        let end_line = Line::new(point, line.end_point());
+        self.line_tree.insert(start_line);
+        self.line_tree.insert(end_line);
+        self.lines.push_front(end_line);
+        self.lines.push_front(start_line);
+    }
+
+    fn add_to_concave_hull(&mut self, line: Line<T>) {
+        // Make sure we don't add duplicates
+        if self.concave_hull_points.is_empty()
+            || !self.concave_hull_points.ends_with(&[line.start_point()])
+        {
+            self.concave_hull_points.push(line.start_point());
+        }
+        self.concave_hull_points.push(line.end_point());
+    }
+
+    fn to_concave_hull(self) -> LineString<T> {
+        self.concave_hull_points.into()
+    }
+}
+
 // This takes significant inspiration from:
 // https://github.com/mapbox/concaveman/blob/54838e1/index.js#L11
 fn concave_hull<T>(mut coords: Vec<Coordinate<T>>, concavity: T) -> LineString<T>
@@ -199,26 +264,10 @@ where
         return hull;
     }
 
-    // Get points in overall dataset that aren't on the exterior linestring of the hull
-    let hull_tree: RTree<Coordinate<T>> = RTree::bulk_load(hull.clone().0);
+    let mut interior_points_tree = get_interior_points_tree(&coords, &hull);
+    let mut builder = ConcaveHullBuilder::new(hull);
 
-    let interior_coords: Vec<Coordinate<T>> = coords
-        .iter()
-        .filter(|coord| !hull_tree.contains(coord))
-        .copied()
-        .collect();
-    let mut interior_points_tree: RTree<Coordinate<T>> = RTree::bulk_load(interior_coords);
-    let mut line_tree: RTree<Line<T>> = RTree::new();
-
-    let mut concave_list: Vec<Point<T>> = vec![];
-    let lines = hull.lines();
-    let mut line_queue: VecDeque<Line<T>> = VecDeque::new();
-
-    for line in lines {
-        line_queue.push_back(line);
-        line_tree.insert(line);
-    }
-    while let Some(line) = line_queue.pop_front() {
+    while let Some(line) = builder.pop_next_line() {
         let edge_length = line.euclidean_length();
         let dist = edge_length / concavity;
         let possible_closest_point = find_point_closest_to_line(
@@ -227,29 +276,17 @@ where
             dist,
             edge_length,
             concavity,
-            &line_tree,
+            &builder.line_tree,
         );
 
         if let Some(closest_point) = possible_closest_point {
             interior_points_tree.remove(&closest_point);
-            line_tree.remove(&line);
-            let point = Point::new(closest_point.x, closest_point.y);
-            let start_line = Line::new(line.start_point(), point);
-            let end_line = Line::new(point, line.end_point());
-            line_tree.insert(start_line);
-            line_tree.insert(end_line);
-            line_queue.push_front(end_line);
-            line_queue.push_front(start_line);
+            builder.bend_line_at(line, closest_point);
         } else {
-            // Make sure we don't add duplicates
-            if concave_list.is_empty() || !concave_list.ends_with(&[line.start_point()]) {
-                concave_list.push(line.start_point());
-            }
-            concave_list.push(line.end_point());
+            builder.add_to_concave_hull(line);
         }
     }
-
-    concave_list.into()
+    builder.to_concave_hull()
 }
 
 #[cfg(test)]

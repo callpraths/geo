@@ -106,84 +106,75 @@ where
     }
 }
 
-fn find_point_closest_to_line<T>(
-    interior_coords_tree: &RTree<Coordinate<T>>,
-    line: Line<T>,
-    max_dist: T,
-    edge_length: T,
-    concavity: T,
-    line_tree: &RTree<Line<T>>,
-) -> Option<Coordinate<T>>
-where
-    T: GeoFloat + RTreeNum,
-{
+fn search_distance<T: GeoFloat + RTreeNum>(edge_length: T, concavity: T) -> T {
+    let max_dist = edge_length / concavity;
     let h = max_dist + max_dist;
-    let w = line.euclidean_length() + h;
+    let w = edge_length + h;
     let two = T::add(T::one(), T::one());
-    let search_dist = T::div(T::sqrt(T::powi(w, 2) + T::powi(h, 2)), two);
+    T::div(T::sqrt(T::powi(w, 2) + T::powi(h, 2)), two)
+}
+
+fn find_closest_interior_point<T: GeoFloat + RTreeNum>(
+    line: &Line<T>,
+    search_dist: T,
+    interior_coords: &RTree<Coordinate<T>>,
+) -> Option<Point<T>> {
     let centroid = line.centroid();
     let centroid_coord = coord! {
         x: centroid.x(),
         y: centroid.y(),
     };
-    let mut candidates = interior_coords_tree
+    let mut candidates = interior_coords
         .locate_within_distance(centroid_coord, search_dist)
         .peekable();
-    let peek = candidates.peek();
-    match peek {
+    match candidates.peek() {
         None => None,
-        Some(&point) => {
-            let closest_point =
-                candidates.fold(Point::new(point.x, point.y), |acc_point, candidate| {
-                    let candidate_point = Point::new(candidate.x, candidate.y);
-                    if line.euclidean_distance(&acc_point)
-                        > line.euclidean_distance(&candidate_point)
-                    {
-                        candidate_point
-                    } else {
-                        acc_point
-                    }
-                });
-            let mut edges_nearby_point = line_tree
-                .locate_within_distance(closest_point, search_dist)
-                .peekable();
-            let peeked_edge = edges_nearby_point.peek();
-
-            // Clippy is having an issue here. It might be a valid suggestion,
-            // but the automatic clippy fix breaks the code, so may need to be done by hand.
-            // See https://github.com/rust-lang/rust/issues/94241
-            #[allow(clippy::manual_map)]
-            let closest_edge_option = match peeked_edge {
-                None => None,
-                Some(&edge) => Some(edges_nearby_point.fold(*edge, |acc, candidate| {
-                    if closest_point.euclidean_distance(&acc)
-                        > closest_point.euclidean_distance(candidate)
-                    {
-                        *candidate
-                    } else {
-                        acc
-                    }
-                })),
-            };
-            let decision_distance = partial_min(
-                closest_point.euclidean_distance(&line.start_point()),
-                closest_point.euclidean_distance(&line.end_point()),
-            );
-            if let Some(closest_edge) = closest_edge_option {
-                let far_enough = edge_length / decision_distance > concavity;
-                let are_edges_equal = closest_edge == line;
-                if far_enough && are_edges_equal {
-                    Some(coord! {
-                        x: closest_point.x(),
-                        y: closest_point.y(),
-                    })
+        Some(&seed) => {
+            Some(candidates.fold(Point::new(seed.x, seed.y), |closest, candidate_coord| {
+                let candidate = Point::new(candidate_coord.x, candidate_coord.y);
+                if line.euclidean_distance(&closest) > line.euclidean_distance(&candidate) {
+                    candidate
                 } else {
-                    None
+                    closest
                 }
-            } else {
-                None
-            }
+            }))
         }
+    }
+}
+
+fn find_point_closest_to_line<T>(
+    builder: &ConcaveHullBuilder<T>,
+    interior_coords_tree: &RTree<Coordinate<T>>,
+    line: Line<T>,
+    concavity: T,
+) -> Option<Coordinate<T>>
+where
+    T: GeoFloat + RTreeNum,
+{
+    let edge_length = line.euclidean_length();
+    let search_dist = search_distance(edge_length, concavity);
+
+    match find_closest_interior_point(&line, search_dist, interior_coords_tree) {
+        None => None,
+        Some(closest_point) => match builder.find_closest_edge(closest_point, search_dist) {
+            None => None,
+            Some(closest_edge) => {
+                if closest_edge != line {
+                    return None;
+                }
+                let decision_distance = partial_min(
+                    closest_point.euclidean_distance(&line.start_point()),
+                    closest_point.euclidean_distance(&line.end_point()),
+                );
+                if edge_length / decision_distance < concavity {
+                    return None;
+                }
+                return Some(coord! {
+                    x: closest_point.x(),
+                    y: closest_point.y(),
+                });
+            }
+        },
     }
 }
 
@@ -201,9 +192,9 @@ fn get_interior_points_tree<T: GeoFloat + RTreeNum>(
 }
 
 struct ConcaveHullBuilder<T: GeoFloat + RTreeNum> {
-    pub lines: VecDeque<Line<T>>,
-    pub line_tree: RTree<Line<T>>,
-    pub concave_hull_points: Vec<Point<T>>,
+    lines: VecDeque<Line<T>>,
+    line_tree: RTree<Line<T>>,
+    concave_hull_points: Vec<Point<T>>,
 }
 
 impl<T: GeoFloat + RTreeNum> ConcaveHullBuilder<T> {
@@ -250,6 +241,27 @@ impl<T: GeoFloat + RTreeNum> ConcaveHullBuilder<T> {
     fn to_concave_hull(self) -> LineString<T> {
         self.concave_hull_points.into()
     }
+
+    fn find_closest_edge(&self, target: Point<T>, search_dist: T) -> Option<Line<T>> {
+        let mut candidates = self
+            .line_tree
+            .locate_within_distance(target, search_dist)
+            .peekable();
+        // Clippy is having an issue here. It might be a valid suggestion,
+        // but the automatic clippy fix breaks the code, so may need to be done by hand.
+        // See https://github.com/rust-lang/rust/issues/94241
+        #[allow(clippy::manual_map)]
+        match candidates.peek() {
+            None => None,
+            Some(&seed) => Some(candidates.fold(*seed, |closest, candidate| {
+                if target.euclidean_distance(&closest) > target.euclidean_distance(candidate) {
+                    *candidate
+                } else {
+                    closest
+                }
+            })),
+        }
+    }
 }
 
 // This takes significant inspiration from:
@@ -268,16 +280,8 @@ where
     let mut builder = ConcaveHullBuilder::new(hull);
 
     while let Some(line) = builder.pop_next_line() {
-        let edge_length = line.euclidean_length();
-        let dist = edge_length / concavity;
-        let possible_closest_point = find_point_closest_to_line(
-            &interior_points_tree,
-            line,
-            dist,
-            edge_length,
-            concavity,
-            &builder.line_tree,
-        );
+        let possible_closest_point =
+            find_point_closest_to_line(&builder, &interior_points_tree, line, concavity);
 
         if let Some(closest_point) = possible_closest_point {
             interior_points_tree.remove(&closest_point);

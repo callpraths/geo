@@ -48,10 +48,7 @@ where
     None
 }
 
-fn get_min_max<T>(p: T, min: T, max: T) -> (T, T)
-where
-    T: CoordNum,
-{
+fn get_min_max<T: PartialOrd>(p: T, min: T, max: T) -> (T, T) {
     if p > max {
         (min, p)
     } else if p < min {
@@ -132,7 +129,7 @@ where
     }
     // LineString with one point equal p
     if line_string.0.len() == 1 {
-        return point_contains_point(Point(line_string[0]), point);
+        return point_contains_point(Point::from(line_string[0]), point);
     }
     // check if point is a vertex
     if line_string.0.contains(&point.0) {

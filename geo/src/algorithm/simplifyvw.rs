@@ -154,7 +154,7 @@ where
                 // Out of bounds, i.e. we're on one edge
                 continue;
             }
-            let area = Triangle(
+            let area = Triangle::new(
                 orig.0[ai as usize],
                 orig.0[current_point as usize],
                 orig.0[bi as usize],
@@ -312,9 +312,9 @@ where
         adjacent[smallest.current as usize] = (0, 0);
         counter -= 1;
         // Remove stale segments from R* tree
-        let left_point = Point(orig.0[left as usize]);
-        let middle_point = Point(orig.0[smallest.current]);
-        let right_point = Point(orig.0[right as usize]);
+        let left_point = Point::from(orig.0[left as usize]);
+        let middle_point = Point::from(orig.0[smallest.current]);
+        let right_point = Point::from(orig.0[right as usize]);
 
         let line_1 = Line::new(left_point, middle_point);
         let line_2 = Line::new(middle_point, right_point);
@@ -335,7 +335,7 @@ where
                 // Out of bounds, i.e. we're on one edge
                 continue;
             }
-            let new = Triangle(
+            let new = Triangle::new(
                 orig.0[ai as usize],
                 orig.0[current_point as usize],
                 orig.0[bi as usize],
@@ -394,7 +394,7 @@ where
 {
     let point_a = orig[triangle.left];
     let point_c = orig[triangle.right];
-    let bounding_rect = Triangle(
+    let bounding_rect = Triangle::new(
         orig[triangle.left],
         orig[triangle.current],
         orig[triangle.right],
@@ -410,7 +410,7 @@ where
                 && ca.0 != point_c
                 && cb.0 != point_a
                 && cb.0 != point_c
-                && cartesian_intersect(ca, cb, Point(point_a), Point(point_c))
+                && cartesian_intersect(ca, cb, Point::from(point_a), Point::from(point_c))
         })
 }
 
@@ -576,7 +576,7 @@ where
     T: CoordFloat + RTreeNum,
 {
     fn simplifyvw_preserve(&self, epsilon: &T) -> MultiLineString<T> {
-        MultiLineString(
+        MultiLineString::new(
             self.0
                 .iter()
                 .map(|l| l.simplifyvw_preserve(epsilon))
@@ -606,7 +606,7 @@ where
     T: CoordFloat + RTreeNum,
 {
     fn simplifyvw_preserve(&self, epsilon: &T) -> MultiPolygon<T> {
-        MultiPolygon(
+        MultiPolygon::new(
             self.0
                 .iter()
                 .map(|p| p.simplifyvw_preserve(epsilon))
@@ -638,7 +638,7 @@ where
     T: CoordFloat,
 {
     fn simplifyvw(&self, epsilon: &T) -> MultiLineString<T> {
-        MultiLineString(self.iter().map(|l| l.simplifyvw(epsilon)).collect())
+        MultiLineString::new(self.iter().map(|l| l.simplifyvw(epsilon)).collect())
     }
 }
 
@@ -662,7 +662,7 @@ where
     T: CoordFloat,
 {
     fn simplifyvw(&self, epsilon: &T) -> MultiPolygon<T> {
-        MultiPolygon(self.iter().map(|p| p.simplifyvw(epsilon)).collect())
+        MultiPolygon::new(self.iter().map(|p| p.simplifyvw(epsilon)).collect())
     }
 }
 
@@ -864,10 +864,10 @@ mod test {
         let correct = vec![(5.0, 2.0), (7.0, 25.0), (10.0, 10.0)];
         let correct_ls: Vec<_> = correct.iter().map(|e| Point::new(e.0, e.1)).collect();
 
-        let mline = MultiLineString(vec![LineString::from(points_ls)]);
+        let mline = MultiLineString::new(vec![LineString::from(points_ls)]);
         assert_relative_eq!(
             mline.simplifyvw(&30.),
-            MultiLineString(vec![LineString::from(correct_ls)]),
+            MultiLineString::new(vec![LineString::from(correct_ls)]),
             epsilon = 1e-6
         );
     }
@@ -900,7 +900,7 @@ mod test {
 
     #[test]
     fn multipolygon() {
-        let mpoly = MultiPolygon(vec![Polygon::new(
+        let mpoly = MultiPolygon::new(vec![Polygon::new(
             LineString::from(vec![
                 (0., 0.),
                 (0., 10.),
@@ -916,7 +916,7 @@ mod test {
 
         assert_relative_eq!(
             mpoly2,
-            MultiPolygon(vec![Polygon::new(
+            MultiPolygon::new(vec![Polygon::new(
                 LineString::from(vec![(0., 0.), (0., 10.), (10., 10.), (10., 0.), (0., 0.)]),
                 vec![],
             )]),

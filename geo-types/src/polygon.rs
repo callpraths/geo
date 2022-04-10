@@ -122,12 +122,12 @@ impl<T: CoordNum> Polygon<T> {
     ///     &LineString::from(vec![(0., 0.), (1., 1.), (1., 0.), (0., 0.),])
     /// );
     /// ```
-    pub fn new(mut exterior: LineString<T>, mut interiors: Vec<LineString<T>>) -> Polygon<T> {
+    pub fn new(mut exterior: LineString<T>, mut interiors: Vec<LineString<T>>) -> Self {
         exterior.close();
         for interior in &mut interiors {
             interior.close();
         }
-        Polygon {
+        Self {
             exterior,
             interiors,
         }
@@ -424,8 +424,10 @@ impl<T: CoordFloat + Signed> Polygon<T> {
             .map(|(idx, _)| {
                 let prev_1 = self.previous_vertex(idx);
                 let prev_2 = self.previous_vertex(prev_1);
-                Point(self.exterior[prev_2])
-                    .cross_prod(Point(self.exterior[prev_1]), Point(self.exterior[idx]))
+                Point::from(self.exterior[prev_2]).cross_prod(
+                    Point::from(self.exterior[prev_1]),
+                    Point::from(self.exterior[idx]),
+                )
             })
             // accumulate and check cross-product result signs in a single pass
             // positive implies ccw convexity, negative implies cw convexity
@@ -440,7 +442,7 @@ impl<T: CoordFloat + Signed> Polygon<T> {
 }
 
 impl<T: CoordNum> From<Rect<T>> for Polygon<T> {
-    fn from(r: Rect<T>) -> Polygon<T> {
+    fn from(r: Rect<T>) -> Self {
         Polygon::new(
             vec![
                 (r.min().x, r.min().y),
@@ -456,7 +458,7 @@ impl<T: CoordNum> From<Rect<T>> for Polygon<T> {
 }
 
 impl<T: CoordNum> From<Triangle<T>> for Polygon<T> {
-    fn from(t: Triangle<T>) -> Polygon<T> {
+    fn from(t: Triangle<T>) -> Self {
         Polygon::new(vec![t.0, t.1, t.2, t.0].into(), Vec::new())
     }
 }

@@ -1,6 +1,6 @@
 # Changes
 
-## Unreleased
+## 0.7.4
 
 * BREAKING: Make `Rect::to_lines` return lines in winding order for `Rect::to_polygon`.
   * <https://github.com/georust/geo/pull/757>
@@ -8,10 +8,16 @@
   * <https://github.com/georust/geo/pull/741>
 * Macros `coord!`, `point!`, `line_string!`, and `polygon!` now support trailing commas such as `coord! { x: 181.2, y: 51.79, }`
   * <https://github.com/georust/geo/pull/752>
+* Internal cleanup: Explicitly declare `use-rstar_0_8` and `use-rstar_0_9` features to be explicit which rstar version is being used. For backward compatibility, the `use-rstar` feature will still enable `use-rstar_0_8`.
+  * <https://github.com/georust/geo/pull/759>
 * Add missing size_hint() method for point and coordinate iterators on LineString
   * <https://github.com/georust/geo/issues/762>
 * Add ExactsizeIterator impl for Points iterator on LineString
   * <https://github.com/georust/geo/pull/767>
+* Extend `point!` macro to support single coordinate expression arguments `point!(coordinate)` (coordinate can be created with the `coord!` macro)
+  * <https://github.com/georust/geo/pull/775>
+* `LineString`, `MultiPoint`, `MultiPolygon`, `Triangle`, `MultiLineString` now have a new constructor `new(...)`. `GeometryCollection` has a `new_from(...)` constructor. `GeometryCollection::new()` has been deprecated - use `GeometryCollection::default()` instead. Do not use tuple constructors like ~~`MultiPoint(...)`~~ for any of the geo-types. Use `MultiPoint::new(...)` and similar ones instead.
+  * PRs: [MultiPolygon::new](https://github.com/georust/geo/pull/786), [MultiLineString::new](https://github.com/georust/geo/pull/784), [Triangle::new](https://github.com/georust/geo/pull/783), [GeometryCollection::new_from](https://github.com/georust/geo/pull/782), [LineString::new](https://github.com/georust/geo/pull/781), [MultiPoint::new](https://github.com/georust/geo/pull/778), [Point::from](https://github.com/georust/geo/pull/777)
 
 ## 0.7.3
 

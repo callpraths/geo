@@ -358,14 +358,14 @@ mod test {
 
     #[test]
     fn test_rotate_multipoints() {
-        let multi_points = MultiPoint(vec![
+        let multi_points = MultiPoint::new(vec![
             point!(x: 0., y: 0.),
             point!(x: 1., y: 1.),
             point!(x: 2., y: 1.),
         ]);
 
         // Results match shapely for `centroid`
-        let expected_for_centroid = MultiPoint(vec![
+        let expected_for_centroid = MultiPoint::new(vec![
             point!(x: 0.7642977396044841, y: -0.5118446353109125),
             point!(x: 0.7642977396044842, y:  0.9023689270621824),
             point!(x: 1.471404520791032, y:  1.60947570824873),
@@ -376,7 +376,7 @@ mod test {
         );
 
         // Results match shapely for `center`
-        let expected_for_center = MultiPoint(vec![
+        let expected_for_center = MultiPoint::new(vec![
             point!(x: 0.6464466094067262, y: -0.5606601717798212),
             point!(x: 0.6464466094067263, y: 0.8535533905932737),
             point!(x: 1.353553390593274, y: 1.560660171779821),
@@ -584,10 +584,10 @@ mod test {
             (x: 20., y: 20.),
             (x: 40., y: 20.)
         ];
-        let multi_line_string: MultiLineString<f64> = MultiLineString(vec![ls1, ls2]);
+        let multi_line_string: MultiLineString<f64> = MultiLineString::new(vec![ls1, ls2]);
 
         // Results match with Shapely for `centroid`
-        let expected_around_centroid = MultiLineString(vec![
+        let expected_around_centroid = MultiLineString::new(vec![
             line_string![
                 (x: -5.062519283392216, y: 19.72288595632566),
                 (x: -3.648305721019121, y: 19.72288595632566),
@@ -606,7 +606,7 @@ mod test {
         );
 
         // Results match with Shapely for `center`
-        let expected_around_center: MultiLineString<f64> = MultiLineString(vec![
+        let expected_around_center: MultiLineString<f64> = MultiLineString::new(vec![
             line_string![
                 (x: -1.213203435596426, y: 17.07106781186548),
                 (x: 0.2010101267766693, y: 17.07106781186548),
@@ -757,7 +757,7 @@ mod test {
         assert_eq!(empty_linestring, rotated_empty_linestring);
 
         // multi line string
-        let empty_multilinestring: MultiLineString<f64> = MultiLineString::<f64>(vec![]);
+        let empty_multilinestring: MultiLineString<f64> = MultiLineString::<f64>::new(vec![]);
         let rotated_empty_multilinestring = empty_multilinestring.rotate_around_centroid(90.);
         assert_eq!(empty_multilinestring, rotated_empty_multilinestring);
 

@@ -22,7 +22,7 @@ pub trait CoordsIter<'a> {
     /// ```
     /// use geo::coords_iter::CoordsIter;
     ///
-    /// let multi_point = geo::MultiPoint(vec![
+    /// let multi_point = geo::MultiPoint::new(vec![
     ///     geo::point!(x: -10., y: 0.),
     ///     geo::point!(x: 20., y: 20.),
     ///     geo::point!(x: 30., y: 40.),
@@ -684,7 +684,7 @@ mod test {
         expected_coords.append(&mut coords.clone());
         expected_coords.append(&mut coords);
 
-        let actual_coords = MultiPoint(vec![point, point])
+        let actual_coords = MultiPoint::new(vec![point, point])
             .coords_iter()
             .collect::<Vec<_>>();
 
@@ -698,7 +698,7 @@ mod test {
         expected_coords.append(&mut coords.clone());
         expected_coords.append(&mut coords);
 
-        let actual_coords = MultiLineString(vec![line_string.clone(), line_string])
+        let actual_coords = MultiLineString::new(vec![line_string.clone(), line_string])
             .coords_iter()
             .collect::<Vec<_>>();
 
@@ -712,7 +712,7 @@ mod test {
         expected_coords.append(&mut coords.clone());
         expected_coords.append(&mut coords);
 
-        let actual_coords = MultiPolygon(vec![polygon.clone(), polygon])
+        let actual_coords = MultiPolygon::new(vec![polygon.clone(), polygon])
             .coords_iter()
             .collect::<Vec<_>>();
 
@@ -756,7 +756,7 @@ mod test {
         let (polygon, mut coords) = create_polygon();
         expected_coords.append(&mut coords);
 
-        let actual_coords = GeometryCollection(vec![
+        let actual_coords = GeometryCollection::new_from(vec![
             Geometry::LineString(line_string),
             Geometry::Polygon(polygon),
         ])
@@ -772,7 +772,7 @@ mod test {
 
     fn create_triangle() -> (Triangle<f64>, Vec<Coordinate<f64>>) {
         (
-            Triangle(
+            Triangle::new(
                 coord! { x: 1., y: 2. },
                 coord! { x: 3., y: 4. },
                 coord! { x: 5., y: 6. },

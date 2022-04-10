@@ -134,7 +134,7 @@ mod test {
     /// Tests: Point in LineString
     #[test]
     fn empty_linestring_test() {
-        let linestring = LineString(Vec::new());
+        let linestring = LineString::new(Vec::new());
         assert!(!linestring.contains(&Point::new(2., 1.)));
     }
     #[test]
@@ -154,7 +154,7 @@ mod test {
     /// Tests: Point in Polygon
     #[test]
     fn empty_polygon_test() {
-        let linestring = LineString(Vec::new());
+        let linestring = LineString::new(Vec::new());
         let poly = Polygon::new(linestring, Vec::new());
         assert!(!poly.contains(&Point::new(2., 1.)));
     }
@@ -233,7 +233,7 @@ mod test {
     /// Tests: Point in MultiPolygon
     #[test]
     fn empty_multipolygon_test() {
-        let multipoly = MultiPolygon(Vec::new());
+        let multipoly = MultiPolygon::new(Vec::new());
         assert!(!multipoly.contains(&Point::new(2., 1.)));
     }
     #[test]
@@ -246,7 +246,7 @@ mod test {
             LineString::from(vec![(2., 0.), (3., 0.), (3., 1.), (2., 1.), (2., 0.)]),
             Vec::new(),
         );
-        let multipoly = MultiPolygon(vec![poly1, poly2]);
+        let multipoly = MultiPolygon::new(vec![poly1, poly2]);
         assert!(multipoly.contains(&Point::new(0.5, 0.5)));
         assert!(multipoly.contains(&Point::new(2.5, 0.5)));
         assert!(!multipoly.contains(&Point::new(1.5, 0.5)));
@@ -267,7 +267,7 @@ mod test {
             Vec::new(),
         );
 
-        let multipoly = MultiPolygon(vec![poly1, poly2]);
+        let multipoly = MultiPolygon::new(vec![poly1, poly2]);
         assert!(multipoly.contains(&Point::new(3., 5.)));
         assert!(multipoly.contains(&Point::new(12., 2.)));
         assert!(!multipoly.contains(&Point::new(3., 2.)));
@@ -324,9 +324,9 @@ mod test {
         let line2 = Line::new(c(0., 6.), c(1.5, 4.5));
         // point on line
         let line3 = Line::new(c(0., 6.), c(3., 3.));
-        assert!(line1.contains(&Point(p0)));
-        assert!(!line2.contains(&Point(p0)));
-        assert!(line3.contains(&Point(p0)));
+        assert!(line1.contains(&Point::from(p0)));
+        assert!(!line2.contains(&Point::from(p0)));
+        assert!(line3.contains(&Point::from(p0)));
     }
     #[test]
     fn line_in_line_test() {
@@ -502,13 +502,13 @@ mod test {
     // https://github.com/georust/geo/issues/473
     fn triangle_contains_collinear_points() {
         let origin: Coordinate<f64> = (0., 0.).into();
-        let tri = Triangle(origin, origin, origin);
+        let tri = Triangle::new(origin, origin, origin);
         let pt: Point<f64> = (0., 1.23456).into();
         assert!(!tri.contains(&pt));
         let pt: Point<f64> = (0., 0.).into();
         assert!(!tri.contains(&pt));
         let origin: Coordinate<f64> = (0., 0.).into();
-        let tri = Triangle((1., 1.).into(), origin, origin);
+        let tri = Triangle::new((1., 1.).into(), origin, origin);
         let pt: Point<f64> = (1., 1.).into();
         assert!(!tri.contains(&pt));
         let pt: Point<f64> = (0.5, 0.5).into();

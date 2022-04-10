@@ -215,7 +215,7 @@ where
     T: GeoFloat,
 {
     fn simplify(&self, epsilon: &T) -> Self {
-        MultiLineString(self.iter().map(|l| l.simplify(epsilon)).collect())
+        MultiLineString::new(self.iter().map(|l| l.simplify(epsilon)).collect())
     }
 }
 
@@ -239,7 +239,7 @@ where
     T: GeoFloat,
 {
     fn simplify(&self, epsilon: &T) -> Self {
-        MultiPolygon(self.iter().map(|p| p.simplify(epsilon)).collect())
+        MultiPolygon::new(self.iter().map(|p| p.simplify(epsilon)).collect())
     }
 }
 
@@ -284,7 +284,7 @@ mod test {
 
     #[test]
     fn multilinestring() {
-        let mline = MultiLineString(vec![LineString::from(vec![
+        let mline = MultiLineString::new(vec![LineString::from(vec![
             (0.0, 0.0),
             (5.0, 4.0),
             (11.0, 5.5),
@@ -296,7 +296,7 @@ mod test {
 
         assert_eq!(
             mline2,
-            MultiLineString(vec![LineString::from(vec![
+            MultiLineString::new(vec![LineString::from(vec![
                 (0.0, 0.0),
                 (5.0, 4.0),
                 (11.0, 5.5),
@@ -332,7 +332,7 @@ mod test {
 
     #[test]
     fn multipolygon() {
-        let mpoly = MultiPolygon(vec![polygon![
+        let mpoly = MultiPolygon::new(vec![polygon![
             (x: 0., y: 0.),
             (x: 0., y: 10.),
             (x: 5., y: 11.),
@@ -345,7 +345,7 @@ mod test {
 
         assert_eq!(
             mpoly2,
-            MultiPolygon(vec![polygon![
+            MultiPolygon::new(vec![polygon![
                 (x: 0., y: 0.),
                 (x: 0., y: 10.),
                 (x: 10., y: 10.),

@@ -35,7 +35,7 @@ use std::ops::{Index, IndexMut};
 /// ```
 /// use geo_types::{coord, LineString};
 ///
-/// let line_string = LineString(vec![
+/// let line_string = LineString::new(vec![
 ///     coord! { x: 0., y: 0. },
 ///     coord! { x: 10., y: 0. },
 /// ]);
@@ -83,7 +83,7 @@ use std::ops::{Index, IndexMut};
 /// ```
 /// use geo_types::{coord, LineString};
 ///
-/// let line_string = LineString(vec![
+/// let line_string = LineString::new(vec![
 ///     coord! { x: 0., y: 0. },
 ///     coord! { x: 10., y: 0. },
 /// ]);
@@ -100,7 +100,7 @@ use std::ops::{Index, IndexMut};
 /// ```
 /// use geo_types::{coord, LineString};
 ///
-/// let line_string = LineString(vec![
+/// let line_string = LineString::new(vec![
 ///     coord! { x: 0., y: 0. },
 ///     coord! { x: 10., y: 0. },
 /// ]);
@@ -120,7 +120,7 @@ use std::ops::{Index, IndexMut};
 /// ```
 /// use geo_types::{coord, LineString, Point};
 ///
-/// let line_string = LineString(vec![
+/// let line_string = LineString::new(vec![
 ///     coord! { x: 0., y: 0. },
 ///     coord! { x: 10., y: 0. },
 /// ]);
@@ -142,7 +142,7 @@ impl<'a, T: CoordNum> Iterator for PointsIter<'a, T> {
     type Item = Point<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|c| Point(*c))
+        self.0.next().map(|c| Point::from(*c))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -158,7 +158,7 @@ impl<'a, T: CoordNum> ExactSizeIterator for PointsIter<'a, T> {
 
 impl<'a, T: CoordNum> DoubleEndedIterator for PointsIter<'a, T> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.0.next_back().map(|c| Point(*c))
+        self.0.next_back().map(|c| Point::from(*c))
     }
 }
 
@@ -191,6 +191,11 @@ impl<'a, T: CoordNum> DoubleEndedIterator for CoordinatesIter<'a, T> {
 }
 
 impl<T: CoordNum> LineString<T> {
+    /// Instantiate Self from the raw content value
+    pub fn new(value: Vec<Coordinate<T>>) -> Self {
+        Self(value)
+    }
+
     /// Return an iterator yielding the coordinates of a [`LineString`] as [`Point`]s
     #[deprecated(note = "Use points() instead")]
     pub fn points_iter(&self) -> PointsIter<T> {
@@ -214,7 +219,7 @@ impl<T: CoordNum> LineString<T> {
 
     /// Return the coordinates of a [`LineString`] as a [`Vec`] of [`Point`]s
     pub fn into_points(self) -> Vec<Point<T>> {
-        self.0.into_iter().map(Point).collect()
+        self.0.into_iter().map(Point::from).collect()
     }
 
     /// Return the coordinates of a [`LineString`] as a [`Vec`] of [`Coordinate`]s
@@ -262,7 +267,7 @@ impl<T: CoordNum> LineString<T> {
         self.0.windows(3).map(|w| {
             // slice::windows(N) is guaranteed to yield a slice with exactly N elements
             unsafe {
-                Triangle(
+                Triangle::new(
                     *w.get_unchecked(0),
                     *w.get_unchecked(1),
                     *w.get_unchecked(2),
@@ -333,20 +338,20 @@ impl<T: CoordNum> LineString<T> {
 /// Turn a [`Vec`] of [`Point`]-like objects into a [`LineString`].
 impl<T: CoordNum, IC: Into<Coordinate<T>>> From<Vec<IC>> for LineString<T> {
     fn from(v: Vec<IC>) -> Self {
-        LineString(v.into_iter().map(|c| c.into()).collect())
+        Self(v.into_iter().map(|c| c.into()).collect())
     }
 }
 
 impl<T: CoordNum> From<Line<T>> for LineString<T> {
     fn from(line: Line<T>) -> Self {
-        LineString(vec![line.start, line.end])
+        Self(vec![line.start, line.end])
     }
 }
 
 /// Turn an iterator of [`Point`]-like objects into a [`LineString`].
 impl<T: CoordNum, IC: Into<Coordinate<T>>> FromIterator<IC> for LineString<T> {
     fn from_iter<I: IntoIterator<Item = IC>>(iter: I) -> Self {
-        LineString(iter.into_iter().map(|c| c.into()).collect())
+        Self(iter.into_iter().map(|c| c.into()).collect())
     }
 }
 
@@ -473,6 +478,7 @@ impl<T: AbsDiffEq<Epsilon = T> + CoordNum> AbsDiffEq for LineString<T> {
     }
 }
 
+#[cfg(any(feature = "rstar_0_8", feature = "rstar_0_9"))]
 macro_rules! impl_rstar_line_string {
     ($rstar:ident) => {
         impl<T> ::$rstar::RTreeObject for LineString<T>
@@ -513,8 +519,8 @@ macro_rules! impl_rstar_line_string {
     };
 }
 
-#[cfg(feature = "rstar")]
-impl_rstar_line_string!(rstar);
+#[cfg(feature = "rstar_0_8")]
+impl_rstar_line_string!(rstar_0_8);
 
 #[cfg(feature = "rstar_0_9")]
 impl_rstar_line_string!(rstar_0_9);
@@ -528,7 +534,7 @@ mod test {
     #[test]
     fn test_exact_size() {
         // see https://github.com/georust/geo/issues/762
-        let ls = LineString(vec![coord! { x: 0., y: 0. }, coord! { x: 10., y: 0. }]);
+        let ls = LineString::new(vec![coord! { x: 0., y: 0. }, coord! { x: 10., y: 0. }]);
 
         // reference to force the `impl IntoIterator for &LineString` impl, giving a `CoordinatesIter`
         for c in (&ls).into_iter().rev().skip(1).rev() {
@@ -600,14 +606,14 @@ mod test {
         let start = coord! { x: 0, y: 0 };
         let end = coord! { x: 10, y: 10 };
         let line = Line::new(start, end);
-        let expected = LineString(vec![start, end]);
+        let expected = LineString::new(vec![start, end]);
 
         assert_eq!(expected, LineString::from(line));
 
         let start = coord! { x: 10., y: 0.5 };
         let end = coord! { x: 10000., y: 10.4 };
         let line = Line::new(start, end);
-        let expected = LineString(vec![start, end]);
+        let expected = LineString::new(vec![start, end]);
 
         assert_eq!(expected, LineString::from(line));
     }

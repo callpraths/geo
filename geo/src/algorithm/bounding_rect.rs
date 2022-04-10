@@ -209,8 +209,8 @@ mod test {
     use crate::algorithm::bounding_rect::BoundingRect;
     use crate::line_string;
     use crate::{
-        coord, polygon, Geometry, GeometryCollection, Line, LineString, MultiLineString,
-        MultiPoint, MultiPolygon, Point, Polygon, Rect,
+        coord, point, polygon, Geometry, GeometryCollection, Line, LineString, MultiLineString,
+        MultiPoint, MultiPolygon, Polygon, Rect,
     };
 
     #[test]
@@ -247,7 +247,7 @@ mod test {
     }
     #[test]
     fn multilinestring_test() {
-        let multiline = MultiLineString(vec![
+        let multiline = MultiLineString::new(vec![
             line_string![(x: 1., y: 1.), (x: -40., y: 1.)],
             line_string![(x: 1., y: 1.), (x: 50., y: 1.)],
             line_string![(x: 1., y: 1.), (x: 1., y: -60.)],
@@ -277,7 +277,7 @@ mod test {
     }
     #[test]
     fn multipolygon_test() {
-        let mpoly = MultiPolygon(vec![
+        let mpoly = MultiPolygon::new(vec![
             polygon![(x: 0., y: 0.), (x: 50., y: 0.), (x: 0., y: -70.), (x: 0., y: 0.)],
             polygon![(x: 0., y: 0.), (x: 5., y: 0.), (x: 0., y: 80.), (x: 0., y: 0.)],
             polygon![(x: 0., y: 0.), (x: -60., y: 0.), (x: 0., y: 6.), (x: 0., y: 0.)],
@@ -314,7 +314,7 @@ mod test {
     fn point_bounding_rect_test() {
         assert_eq!(
             Rect::new(coord! { x: 1., y: 2. }, coord! { x: 1., y: 2. }),
-            Point(coord! { x: 1., y: 2. }).bounding_rect(),
+            point! { x: 1., y: 2. }.bounding_rect(),
         );
     }
 
@@ -322,9 +322,9 @@ mod test {
     fn geometry_collection_bounding_rect_test() {
         assert_eq!(
             Some(Rect::new(coord! { x: 0., y: 0. }, coord! { x: 1., y: 2. })),
-            GeometryCollection(vec![
-                Geometry::Point(Point(coord! { x: 0., y: 0. })),
-                Geometry::Point(Point(coord! { x: 1., y: 2. })),
+            GeometryCollection::new_from(vec![
+                Geometry::Point(point! { x: 0., y: 0. }),
+                Geometry::Point(point! { x: 1., y: 2. }),
             ])
             .bounding_rect(),
         );

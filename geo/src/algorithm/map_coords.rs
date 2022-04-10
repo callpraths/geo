@@ -317,7 +317,7 @@ impl<T: CoordNum, NT: CoordNum> MapCoords<T, NT> for MultiPoint<T> {
     type Output = MultiPoint<NT>;
 
     fn map_coords(&self, func: impl Fn(&(T, T)) -> (NT, NT) + Copy) -> Self::Output {
-        MultiPoint(self.iter().map(|p| p.map_coords(func)).collect())
+        MultiPoint::new(self.iter().map(|p| p.map_coords(func)).collect())
     }
 }
 
@@ -328,7 +328,7 @@ impl<T: CoordNum, NT: CoordNum, E> TryMapCoords<T, NT, E> for MultiPoint<T> {
         &self,
         func: impl Fn(&(T, T)) -> Result<(NT, NT), E> + Copy,
     ) -> Result<Self::Output, E> {
-        Ok(MultiPoint(
+        Ok(MultiPoint::new(
             self.0
                 .iter()
                 .map(|p| p.try_map_coords(func))
@@ -349,7 +349,7 @@ impl<T: CoordNum, NT: CoordNum> MapCoords<T, NT> for MultiLineString<T> {
     type Output = MultiLineString<NT>;
 
     fn map_coords(&self, func: impl Fn(&(T, T)) -> (NT, NT) + Copy) -> Self::Output {
-        MultiLineString(self.iter().map(|l| l.map_coords(func)).collect())
+        MultiLineString::new(self.iter().map(|l| l.map_coords(func)).collect())
     }
 }
 
@@ -360,7 +360,7 @@ impl<T: CoordNum, NT: CoordNum, E> TryMapCoords<T, NT, E> for MultiLineString<T>
         &self,
         func: impl Fn(&(T, T)) -> Result<(NT, NT), E> + Copy,
     ) -> Result<Self::Output, E> {
-        Ok(MultiLineString(
+        Ok(MultiLineString::new(
             self.0
                 .iter()
                 .map(|l| l.try_map_coords(func))
@@ -381,7 +381,7 @@ impl<T: CoordNum, NT: CoordNum> MapCoords<T, NT> for MultiPolygon<T> {
     type Output = MultiPolygon<NT>;
 
     fn map_coords(&self, func: impl Fn(&(T, T)) -> (NT, NT) + Copy) -> Self::Output {
-        MultiPolygon(self.iter().map(|p| p.map_coords(func)).collect())
+        MultiPolygon::new(self.iter().map(|p| p.map_coords(func)).collect())
     }
 }
 
@@ -392,7 +392,7 @@ impl<T: CoordNum, NT: CoordNum, E> TryMapCoords<T, NT, E> for MultiPolygon<T> {
         &self,
         func: impl Fn(&(T, T)) -> Result<(NT, NT), E> + Copy,
     ) -> Result<Self::Output, E> {
-        Ok(MultiPolygon(
+        Ok(MultiPolygon::new(
             self.0
                 .iter()
                 .map(|p| p.try_map_coords(func))
@@ -475,7 +475,7 @@ impl<T: CoordNum, NT: CoordNum> MapCoords<T, NT> for GeometryCollection<T> {
     type Output = GeometryCollection<NT>;
 
     fn map_coords(&self, func: impl Fn(&(T, T)) -> (NT, NT) + Copy) -> Self::Output {
-        GeometryCollection(self.iter().map(|g| g.map_coords(func)).collect())
+        GeometryCollection::new_from(self.iter().map(|g| g.map_coords(func)).collect())
     }
 }
 
@@ -486,7 +486,7 @@ impl<T: CoordNum, NT: CoordNum, E> TryMapCoords<T, NT, E> for GeometryCollection
         &self,
         func: impl Fn(&(T, T)) -> Result<(NT, NT), E> + Copy,
     ) -> Result<Self::Output, E> {
-        Ok(GeometryCollection(
+        Ok(GeometryCollection::new_from(
             self.0
                 .iter()
                 .map(|g| g.try_map_coords(func))
@@ -540,7 +540,7 @@ impl<T: CoordNum, NT: CoordNum> MapCoords<T, NT> for Triangle<T> {
         let p2 = func(&self.1.x_y());
         let p3 = func(&self.2.x_y());
 
-        Triangle(
+        Triangle::new(
             coord! { x: p1.0, y: p1.1 },
             coord! { x: p2.0, y: p2.1 },
             coord! { x: p3.0, y: p3.1 },
@@ -559,7 +559,7 @@ impl<T: CoordNum, NT: CoordNum, E> TryMapCoords<T, NT, E> for Triangle<T> {
         let p2 = func(&self.1.x_y())?;
         let p3 = func(&self.2.x_y())?;
 
-        Ok(Triangle(
+        Ok(Triangle::new(
             coord! { x: p1.0, y: p1.1 },
             coord! { x: p2.0, y: p2.1 },
             coord! { x: p3.0, y: p3.1 },
@@ -573,7 +573,7 @@ impl<T: CoordNum> MapCoordsInplace<T> for Triangle<T> {
         let p2 = func(&self.1.x_y());
         let p3 = func(&self.2.x_y());
 
-        let mut new_triangle = Triangle(
+        let mut new_triangle = Triangle::new(
             coord! { x: p1.0, y: p1.1 },
             coord! { x: p2.0, y: p2.1 },
             coord! { x: p3.0, y: p3.1 },
@@ -718,11 +718,11 @@ mod test {
     fn multipoint() {
         let p1 = Point::new(10., 10.);
         let p2 = Point::new(0., -100.);
-        let mp = MultiPoint(vec![p1, p2]);
+        let mp = MultiPoint::new(vec![p1, p2]);
 
         assert_eq!(
             mp.map_coords(|&(x, y)| (x + 10., y + 100.)),
-            MultiPoint(vec![Point::new(20., 110.), Point::new(10., 0.)])
+            MultiPoint::new(vec![Point::new(20., 110.), Point::new(10., 0.)])
         );
     }
 
@@ -730,11 +730,11 @@ mod test {
     fn multilinestring() {
         let line1: LineString<f32> = LineString::from(vec![(0., 0.), (1., 2.)]);
         let line2: LineString<f32> = LineString::from(vec![(-1., 0.), (0., 0.), (1., 2.)]);
-        let mline = MultiLineString(vec![line1, line2]);
+        let mline = MultiLineString::new(vec![line1, line2]);
         let mline2 = mline.map_coords(|&(x, y)| (x + 10., y - 100.));
         assert_relative_eq!(
             mline2,
-            MultiLineString(vec![
+            MultiLineString::new(vec![
                 LineString::from(vec![(10., -100.), (11., -98.)]),
                 LineString::from(vec![(9., -100.), (10., -100.), (11., -98.)]),
             ]),
@@ -770,7 +770,7 @@ mod test {
             ],
         ];
 
-        let mp = MultiPolygon(vec![poly1, poly2]);
+        let mp = MultiPolygon::new(vec![poly1, poly2]);
         let mp2 = mp.map_coords(|&(x, y)| (x * 2., y + 100.));
         assert_eq!(mp2.0.len(), 2);
         assert_relative_eq!(
@@ -811,11 +811,11 @@ mod test {
         let p1 = Geometry::Point(Point::new(10., 10.));
         let line1 = Geometry::LineString(LineString::from(vec![(0., 0.), (1., 2.)]));
 
-        let gc = GeometryCollection(vec![p1, line1]);
+        let gc = GeometryCollection::new_from(vec![p1, line1]);
 
         assert_eq!(
             gc.map_coords(|&(x, y)| (x + 10., y + 100.)),
-            GeometryCollection(vec![
+            GeometryCollection::new_from(vec![
                 Geometry::Point(Point::new(20., 110.)),
                 Geometry::LineString(LineString::from(vec![(10., 100.), (11., 102.)])),
             ])

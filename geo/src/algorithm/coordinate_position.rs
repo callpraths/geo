@@ -444,7 +444,7 @@ mod test {
 
     #[test]
     fn test_empty_poly() {
-        let square_poly: Polygon<f64> = Polygon::new(LineString(vec![]), vec![]);
+        let square_poly: Polygon<f64> = Polygon::new(LineString::new(vec![]), vec![]);
         assert_eq!(
             square_poly.coordinate_position(&Coordinate::zero()),
             CoordPos::Outside
@@ -626,7 +626,7 @@ mod test {
 
     #[test]
     fn test_boundary_rule() {
-        let multi_line_string = MultiLineString(vec![
+        let multi_line_string = MultiLineString::new(vec![
             // first two lines have same start point but different end point
             line_string![(x: 0.0, y: 0.0), (x: 1.0, y: 1.0)],
             line_string![(x: 0.0, y: 0.0), (x: -1.0, y: -1.0)],
@@ -691,7 +691,7 @@ mod test {
 
     #[test]
     fn test_triangle() {
-        let triangle = Triangle((0.0, 0.0).into(), (5.0, 10.0).into(), (10.0, 0.0).into());
+        let triangle = Triangle::new((0.0, 0.0).into(), (5.0, 10.0).into(), (10.0, 0.0).into());
         assert_eq!(
             triangle.coordinate_position(&coord! { x: 5.0, y: 5.0 }),
             CoordPos::Inside
@@ -708,9 +708,9 @@ mod test {
 
     #[test]
     fn test_collection() {
-        let triangle = Triangle((0.0, 0.0).into(), (5.0, 10.0).into(), (10.0, 0.0).into());
+        let triangle = Triangle::new((0.0, 0.0).into(), (5.0, 10.0).into(), (10.0, 0.0).into());
         let rect = Rect::new((0.0, 0.0), (10.0, 10.0));
-        let collection = GeometryCollection(vec![triangle.into(), rect.into()]);
+        let collection = GeometryCollection::new_from(vec![triangle.into(), rect.into()]);
 
         //  outside of both
         assert_eq!(

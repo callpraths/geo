@@ -249,7 +249,7 @@ where
 {
     /// Minimum distance from a `Line` to a `Coordinate`
     fn euclidean_distance(&self, coord: &Coordinate<T>) -> T {
-        ::geo_types::private_utils::point_line_euclidean_distance(Point(*coord), *self)
+        ::geo_types::private_utils::point_line_euclidean_distance(Point::from(*coord), *self)
     }
 }
 
@@ -387,7 +387,9 @@ where
     fn euclidean_distance(&self, other: &Polygon<T>) -> T {
         if self.intersects(other) || other.contains(self) {
             T::zero()
-        } else if !other.interiors().is_empty() && ring_contains_point(other, Point(self.0[0])) {
+        } else if !other.interiors().is_empty()
+            && ring_contains_point(other, Point::from(self.0[0]))
+        {
             // check each ring distance, returning the minimum
             let mut mindist: T = Float::max_value();
             for ring in other.interiors() {
@@ -461,7 +463,9 @@ where
             return T::zero();
         }
         // Containment check
-        if !self.interiors().is_empty() && ring_contains_point(self, Point(poly2.exterior().0[0])) {
+        if !self.interiors().is_empty()
+            && ring_contains_point(self, Point::from(poly2.exterior().0[0]))
+        {
             // check each ring distance, returning the minimum
             let mut mindist: T = Float::max_value();
             for ring in self.interiors() {
@@ -469,7 +473,7 @@ where
             }
             return mindist;
         } else if !poly2.interiors().is_empty()
-            && ring_contains_point(poly2, Point(self.exterior().0[0]))
+            && ring_contains_point(poly2, Point::from(self.exterior().0[0]))
         {
             let mut mindist: T = Float::max_value();
             for ring in poly2.interiors() {
@@ -688,7 +692,7 @@ mod test {
     fn point_polygon_empty_test() {
         // an empty Polygon
         let points = vec![];
-        let ls = LineString(points);
+        let ls = LineString::new(points);
         let poly = Polygon::new(ls, vec![]);
         // A point on the octagon
         let p = Point::new(2.5, 0.5);
@@ -753,7 +757,7 @@ mod test {
         let pol1 = Polygon::new(ls1, vec![]);
         let pol2 = Polygon::new(ls2, vec![]);
         let pol3 = Polygon::new(ls3, vec![]);
-        let mp = MultiPolygon(vec![pol1.clone(), pol2, pol3]);
+        let mp = MultiPolygon::new(vec![pol1.clone(), pol2, pol3]);
         let pnt1 = Point::new(0.0, 15.0);
         let pnt2 = Point::new(10.0, 20.0);
         let ln = Line::new(pnt1.0, pnt2.0);
@@ -768,7 +772,7 @@ mod test {
         let ls2 = LineString::from(vec![(3.0, 0.0), (4.0, 10.0), (5.0, 0.0), (3.0, 0.0)]);
         let p1 = Polygon::new(ls1, vec![]);
         let p2 = Polygon::new(ls2, vec![]);
-        let mp = MultiPolygon(vec![p1, p2]);
+        let mp = MultiPolygon::new(vec![p1, p2]);
         let p = Point::new(50.0, 50.0);
         assert_relative_eq!(p.euclidean_distance(&mp), 60.959002616512684);
     }
@@ -825,7 +829,7 @@ mod test {
     // Point to LineString, empty LineString
     fn point_linestring_empty_test() {
         let points = vec![];
-        let ls = LineString(points);
+        let ls = LineString::new(points);
         let p = Point::new(5.0, 4.0);
         let dist = p.euclidean_distance(&ls);
         assert_relative_eq!(dist, 0.0);
@@ -834,7 +838,7 @@ mod test {
     fn distance_multilinestring_test() {
         let v1 = LineString::from(vec![(0.0, 0.0), (1.0, 10.0)]);
         let v2 = LineString::from(vec![(1.0, 10.0), (2.0, 0.0), (3.0, 1.0)]);
-        let mls = MultiLineString(vec![v1, v2]);
+        let mls = MultiLineString::new(vec![v1, v2]);
         let p = Point::new(50.0, 50.0);
         assert_relative_eq!(p.euclidean_distance(&mls), 63.25345840347388);
     }
@@ -863,7 +867,7 @@ mod test {
             Point::new(-1.0, 1.0),
             Point::new(0.0, 10.0),
         ];
-        let mp = MultiPoint(v);
+        let mp = MultiPoint::new(v);
         let p = Point::new(50.0, 50.0);
         assert_relative_eq!(p.euclidean_distance(&mp), 64.03124237432849)
     }

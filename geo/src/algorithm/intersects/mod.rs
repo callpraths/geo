@@ -124,7 +124,7 @@ mod test {
     #[test]
     fn empty_linestring2_test() {
         let linestring = line_string![(x: 3., y: 2.), (x: 7., y: 6.)];
-        assert!(!linestring.intersects(&LineString(Vec::new())));
+        assert!(!linestring.intersects(&LineString::new(Vec::new())));
     }
     #[test]
     fn empty_all_linestring_test() {
@@ -536,16 +536,16 @@ mod test {
         let ls = line_string![(0., 0.).into(), (1., 1.).into()];
         let poly = Polygon::new(LineString::from(vec![(0., 0.), (1., 1.), (1., 0.)]), vec![]);
         let rect = Rect::new(coord! { x: 10., y: 20. }, coord! { x: 30., y: 10. });
-        let tri = Triangle(
+        let tri = Triangle::new(
             coord! { x: 0., y: 0. },
             coord! { x: 10., y: 20. },
             coord! { x: 20., y: -10. },
         );
         let geom = Geometry::Point(pt);
-        let gc = GeometryCollection(vec![geom.clone()]);
-        let multi_point = MultiPoint(vec![pt]);
-        let multi_ls = MultiLineString(vec![ls.clone()]);
-        let multi_poly = MultiPolygon(vec![poly.clone()]);
+        let gc = GeometryCollection::new_from(vec![geom.clone()]);
+        let multi_point = MultiPoint::new(vec![pt]);
+        let multi_ls = MultiLineString::new(vec![ls.clone()]);
+        let multi_poly = MultiPolygon::new(vec![poly.clone()]);
 
         let _ = pt.intersects(&pt);
         let _ = pt.intersects(&ln);

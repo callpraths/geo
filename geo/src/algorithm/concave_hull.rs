@@ -129,16 +129,17 @@ fn find_closest_interior_point<T: GeoFloat + RTreeNum>(
         .peekable();
     match candidates.peek() {
         None => None,
-        Some(&seed) => {
-            Some(candidates.fold(Point::new(seed.x, seed.y), |closest, candidate_coord| {
+        Some(&seed) => Some(candidates.fold(
+            Point::new(seed.x, seed.y),
+            |closest, candidate_coord| {
                 let candidate = Point::new(candidate_coord.x, candidate_coord.y);
                 if line.euclidean_distance(&closest) > line.euclidean_distance(&candidate) {
                     candidate
                 } else {
                     closest
                 }
-            }))
-        }
+            },
+        )),
     }
 }
 
@@ -488,5 +489,93 @@ mod test {
             Coordinate::from((4.0, 0.0)),
         ];
         assert_eq!(res.exterior().0, correct);
+    }
+
+    #[test]
+    fn closest_point_rejected_because_too_close_to_neighboring_edge() {
+        let points: MultiPoint<_> =
+            vec![(0., 0.), (10., 0.), (0., 10.), (1., 2.), (3., 2.5)].into();
+        let res = points.concave_hull(1.);
+        let correct = vec![
+            Coordinate::from((10., 0.)),
+            Coordinate::from((0., 10.)),
+            Coordinate::from((3., 2.5)),
+            Coordinate::from((1., 2.)),
+            Coordinate::from((0., 0.)),
+            Coordinate::from((10., 0.)),
+        ];
+        assert_eq!(res.exterior().0, correct);
+    }
+
+    #[test]
+    fn closest_point_too_close_to_non_neighboring_edge() {
+        let points: MultiPoint<_> = vec![
+            (0., 0.),
+            (0.5, -10.),
+            (1., 0.),
+            (1., 2.),
+            (0., 1.),
+            (0.4, 0.5),
+        ]
+        .into();
+        let res = points.concave_hull(1.9);
+        let correct = vec![
+            Coordinate::from((0.5, -10.)),
+            Coordinate::from((1., 0.)),
+            Coordinate::from((0.4, 0.5)),
+            Coordinate::from((1., 2.)),
+            Coordinate::from((0., 1.)),
+            Coordinate::from((0., 0.)),
+            Coordinate::from((0.5, -10.)),
+        ];
+        assert_eq!(res.exterior().0, correct);
+    }
+
+    #[test]
+    fn issue792() {
+        let mp: MultiPoint<f64> = vec![
+            (450., 100.),
+            (611., 100.),
+            (100., 450.),
+            (100., 611.),
+            (275., 1000.),
+            (1000., 1000.),
+            (1000., 275.),
+            (1000., 1000.),
+            (100., 100.),
+            (1000., 100.),
+            (1000., 1000.),
+            (100., 1000.),
+            (100., 100.),
+            (50., 500.),
+            (500., 50.),
+            (1500., 500.),
+            (500., 1500.),
+            (50., 500.),
+        ]
+        .into();
+
+        let expected: Polygon<f64> = Polygon::new(
+            LineString::from(vec![
+                (100., 100.),
+                (100., 450.),
+                (50., 500.),
+                (100., 611.),
+                (100., 1000.),
+                (275., 1000.),
+                (500., 1500.),
+                (1000., 1000.),
+                (1500., 500.),
+                (1000., 275.),
+                (1000., 100.),
+                (611., 100.),
+                (500., 50.),
+                (450., 100.),
+                (100., 100.),
+            ]),
+            vec![],
+        );
+
+        assert_eq!(mp.concave_hull(1.), expected);
     }
 }
